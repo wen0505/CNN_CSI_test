@@ -1,0 +1,72 @@
+import tensorflow as tf
+import matplotlib.pyplot as plt
+from keras.preprocessing.image import ImageDataGenerator
+
+batch_size = 32
+target_size = (64, 64)
+
+model = tf.keras.models.Sequential([
+    tf.keras.layers.Conv2D(32, (3, 3), activation='relu', input_shape=(64, 64, 3)),
+    tf.keras.layers.MaxPooling2D(2, 2),
+    tf.keras.layers.Conv2D(64, (3, 3), activation='relu'),
+    tf.keras.layers.MaxPooling2D(2, 2),
+    tf.keras.layers.Conv2D(64, (3, 3), activation='relu'),
+    tf.keras.layers.Dropout(0.5),
+    tf.keras.layers.Dense(128, activation='relu'),
+    tf.keras.layers.Dense(1, activation='sigmoid')
+])
+
+model.summary()
+
+model.compile(optimizer='adam', loss='binary_crossentropy', metrics=['accuracy'])
+
+train_datagen = ImageDataGenerator(rescale=1 / 255)
+
+training_set = train_datagen.flow_from_directory('dataset2/train_set',
+                                                 target_size=target_size,
+                                                 batch_size=batch_size,
+                                                 class_mode='binary')
+
+test_datagen = ImageDataGenerator(rescale=1. / 255)
+
+test_set = test_datagen.flow_from_directory('dataset2/test_set',
+                                            target_size=target_size,
+                                            batch_size=batch_size,
+                                            class_mode='binary')
+
+history = model.fit_generator(training_set,
+                              steps_per_epoch=int(6000 // batch_size),
+                              epochs=10,
+                              validation_data=test_set,
+                              validation_steps=int(1000/batch_size))
+# https://stackoverflow.com/questions/60509425/how-to-use-repeat-function-when-building-data-in-keras
+# history = model.fit(training_set,
+#                     steps_per_epoch=int(6000/batch_size),
+#                     epochs=25,
+#                     validation_data=test_set,
+#                     validation_steps=int(500/batch_size))
+
+# 畫出acc學習曲線
+acc = history.history['accuracy']
+epochs = range(1, len(acc) + 1)
+val_acc = history.history['val_accuracy']
+plt.plot(epochs, acc, 'bo', label='Training acc')
+plt.plot(epochs, val_acc, 'r', label='Validation acc')
+plt.title('Training and validation accuracy')
+plt.legend(loc='lower right')
+plt.grid()
+# 儲存acc學習曲線
+plt.savefig('./acc.png')
+plt.show()
+
+# 畫出loss學習曲線
+loss = history.history['loss']
+val_loss = history.history['val_loss']
+plt.plot(epochs, loss, 'bo', label='Training loss')
+plt.plot(epochs, val_loss, 'r', label='Validation loss')
+plt.title('Training and validation loss')
+plt.legend(loc='upper right')
+plt.grid()
+# 儲存loss學習曲線
+plt.savefig('loss.png')
+plt.show()
